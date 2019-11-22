@@ -1,0 +1,3 @@
+# from galaxy
+- src: ome.nginx_proxy
+- src: geerlingguy.nginx

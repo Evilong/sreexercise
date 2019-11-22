@@ -1,0 +1,30 @@
+- hosts: loadbalancer
+  become: yes
+  gather_facts: yes
+  roles:
+    #- role: geerlingguy.haproxy
+    #  haproxy_backend_servers:
+    #    - name: item
+    #      address: "127.0.0.1"
+    #  loop: "{{ groups['site'] }}"
+    - role: ome.nginx_proxy
+      nginx_proxy_backends:
+        - location: /
+          server: http://sitesLoadbalancer
+      nginx_proxy_upstream_servers:
+        - name: sitesLoadbalancer
+          balance: ip_hash 
+          servers: "{{ groups['site'] }}"
+
+- hosts: site
+  become: yes
+  roles:
+    - geerlingguy.nginx
+  post_tasks:
+    - name: Copying web page files
+      copy:
+        src: files/
+        dest: /usr/share/nginx/html/
+        mode: 0644
+        owner: root
+        group: root

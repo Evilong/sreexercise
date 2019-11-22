@@ -1,0 +1,41 @@
+# Requirements:
+#
+# pip install ansible
+#
+
+VAGRANTFILE_API_VERSION = "2"
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+    # Creating nginx load balancer
+    config.vm.define :loadbalancer do |loadbalancer|
+      loadbalancer.vm.provider :virtualbox do |v|
+        v.name = "loadbalancer"
+        v.customize [
+        "modifyvm", :id,
+        "--name", "loadbalancer",
+        "--memory", 512,
+        "--natdnshostresolver1", "on",
+        "--cpus", 1,
+      ]
+    end
+    loadbalancer.vm.box = "centos/7"
+    loadbalancer.vm.network :private_network, ip: "192.168.30.10"
+    loadbalancer.vm.network "forwarded_port", guest: 80, host: 8080
+  end
+  # Creating 2 regions
+  (1..2).each do |j|
+    # Creating 2 sites in each region
+    (1..2).each do |i|
+      config.vm.define :"sreexercise-region#{j}-site#{i}" do |site|
+      site.vm.box = "centos/7"
+      site.vm.network :"private_network", ip: "192.168.3#{j}.2#{i}"
+      end
+    end
+  end
+  config.vm.provision :ansible do |ansible|
+    ansible.raw_arguments = ["-v", "-b"]
+    ansible.playbook = "deploy.yml"
+    ansible.groups = {
+    "site" => ["sreexercise-region[1:2]-site[1:2]"]
+  }
+  end
+end
